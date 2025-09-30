@@ -50,34 +50,12 @@ dependencies = [
   "platformdirs>=4.3.8",
   "fastjsonschema>=2.21.1",
   "orjson>=3.10.18",
-  "skynet>=0.4.1",
 ]
 
 [project.scripts]
 skybrushd = "flockwave.server.launcher:start"
 skybrush-gateway = "flockwave.gateway.launcher:start"
 skybrush-proxy = "flockwave.proxy.launcher:start"
-
-[project.optional-dependencies]
-all = ["flockwave-server[collmot,pro]"]
-collmot = [
-  "flockwave-server[pro]",
-  "flockwave-flockctrl>=4.0.0",
-  "skybrush-ext-dock>=1.2.0",
-  "skybrush-ext-flockctrl>=4.0.3",
-]
-pro = [
-  "skybrush-ext-firmware-update>=0.5.0",
-  "skybrush-ext-flight-report>=1.0.3",
-  "skybrush-ext-map-cache>=1.1.1",
-  "skybrush-ext-show-pro>=0.4.0",
-  "skybrush-ext-sidekick>=1.0.2",
-  "skybrush-ext-skynet>=0.4.1",
-  "skybrush-ext-studio>=0.8.6",
-  "skybrush-ext-timecode>=1.4.1",
-  "skybrush-lib-mission-planning>=2.4.1",
-  "skybrush-studio>=4.24.2",
-]
 
 [tool.uv.build-backend]
 module-name = "flockwave"
