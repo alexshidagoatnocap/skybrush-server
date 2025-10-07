@@ -2,7 +2,15 @@
 
 from typing import Optional, Union
 
-__all__ = ("MAVLinkExtensionError", "UnknownFlightModeError")
+from .enums import MAVMissionResult
+
+__all__ = (
+    "MAVLinkExtensionError",
+    "UnknownFlightModeError",
+    "InvalidSigningKeyError",
+    "InvalidSystemIdError",
+    "MissionAcknowledgmentError",
+)
 
 
 class MAVLinkExtensionError(RuntimeError):
@@ -25,3 +33,32 @@ class InvalidSigningKeyError(MAVLinkExtensionError):
     """Error thrown when there is a problem with a MAVLink signing key."""
 
     pass
+
+
+class InvalidSystemIdError(MAVLinkExtensionError):
+    """Error thrown when a system ID is invalid or outside an allowed range."""
+
+    def __init__(self, system_id: int, message: Optional[str] = None):
+        message = message or f"Invalid system ID: {system_id!r}"
+        super().__init__(message)
+
+
+class MissionAcknowledgmentError(MAVLinkExtensionError):
+    """Error thrown when a mission item operation fails with a non-success
+    MAV_MISSION_RESULT value.
+    """
+
+    result: int
+    operation: Optional[str]
+
+    def __init__(self, result: int, operation: Optional[str] = None):
+        self.result = result
+        self.operation = operation
+
+        operation = (
+            f"MAVLink mission operation ({operation})"
+            if operation
+            else "MAVLink mission operation"
+        )
+        message = f"{operation} returned {MAVMissionResult.describe(result)}"
+        super().__init__(message)

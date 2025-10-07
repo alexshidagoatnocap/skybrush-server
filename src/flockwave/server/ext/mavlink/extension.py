@@ -7,7 +7,15 @@ from __future__ import annotations
 from collections import OrderedDict
 from contextlib import ExitStack, contextmanager
 from functools import partial
-from typing import Callable, Iterator, Union, cast, Optional, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Iterator,
+    cast,
+    Optional,
+    TYPE_CHECKING,
+    overload,
+)
 
 from flockwave.server.ext.base import UAVExtension
 from flockwave.server.ext.mavlink.fw_upload import FirmwareUpdateTarget
@@ -125,6 +133,23 @@ class MAVLinkDronesExtension(UAVExtension[MAVLinkDriver]):
         driver.run_in_background = self.run_in_background
         driver.send_packet = self._send_packet
         driver.use_bulk_parameter_uploads = use_bulk_parameter_uploads
+
+    def exports(self) -> dict[str, Any]:
+        return {
+            "find_network_by_id": self._find_network_by_id,
+        }
+
+    def _find_network_by_id(self, network_id: str) -> Optional[MAVLinkNetwork]:
+        """Finds a MAVLink network managed by this extension by its ID.
+
+        Parameters:
+            network_id: the ID of the network to find
+
+        Returns:
+            the MAVLink network with the given ID, or `None` if no such
+            network exists
+        """
+        return self._networks.get(network_id)
 
     async def run(self, app, configuration):
         networks = OrderedDict(
@@ -435,20 +460,50 @@ class MAVLinkDronesExtension(UAVExtension[MAVLinkDriver]):
 
         self._uavs.append(uav)
 
+    @overload
     async def _send_packet(
         self,
         spec: MAVLinkMessageSpecification,
         target: MAVLinkUAV,
         *,
+        channel: Optional[str] = None,
+    ) -> None: ...
+
+    @overload
+    async def _send_packet(
+        self,
+        spec: Optional[MAVLinkMessageSpecification],
+        target: MAVLinkUAV,
+        *,
+        wait_for_response: tuple[str, MAVLinkMessageMatcher],
+        channel: Optional[str] = None,
+    ) -> MAVLinkMessage: ...
+
+    @overload
+    async def _send_packet(
+        self,
+        spec: Optional[MAVLinkMessageSpecification],
+        target: MAVLinkUAV,
+        *,
+        wait_for_one_of: dict[str, MAVLinkMessageSpecification],
+        channel: Optional[str] = None,
+    ) -> tuple[str, MAVLinkMessage]: ...
+
+    async def _send_packet(
+        self,
+        spec: Optional[MAVLinkMessageSpecification],
+        target: MAVLinkUAV,
+        *,
         wait_for_response: Optional[tuple[str, MAVLinkMessageMatcher]] = None,
         wait_for_one_of: Optional[dict[str, MAVLinkMessageSpecification]] = None,
         channel: Optional[str] = None,
-    ) -> Union[None, MAVLinkMessage, tuple[str, MAVLinkMessage]]:
+    ):
         """Sends a message to the given UAV and optionally waits for a matching
         response.
 
         Parameters:
-            spec: the specification of the MAVLink message to send
+            spec: the specification of the MAVLink message to send; ``None`` if
+                no packet needs to be sent and we only need to wait for a reply
             target: the UAV to send the message to
             wait_for_response: when not `None`, specifies a MAVLink message to
                 wait for as a response. The message specification will be
